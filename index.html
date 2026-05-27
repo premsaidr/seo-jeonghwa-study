@@ -1000,6 +1000,31 @@ document.querySelectorAll('article table').forEach(table => {
   wrap.appendChild(table);
 });
 
+// 목차를 본문 순서대로 자동 재생성 (h2 → 그 아래 h3들 → 다음 h2 …)
+(function() {
+  const tocList = document.querySelector('.toc-list');
+  if (!tocList) return;
+  const headings = document.querySelectorAll('article h2[id], article h3[id]');
+  if (!headings.length) return;
+
+  const newItems = [];
+  headings.forEach(h => {
+    const tag = h.tagName.toLowerCase();
+    const cls = tag === 'h2' ? 'toc-h2' : 'toc-h3';
+    const li = document.createElement('li');
+    li.className = cls;
+    const a = document.createElement('a');
+    a.href = '#' + h.id;
+    a.textContent = h.textContent.trim();
+    li.appendChild(a);
+    newItems.push(li);
+  });
+
+  // 기존 목차를 비우고 본문 순서대로 다시 채움
+  tocList.innerHTML = '';
+  newItems.forEach(li => tocList.appendChild(li));
+})();
+
 // 주석 번호 ↔ 참고자료 양방향 점프 시스템
 (function() {
   // 1) 참고자료 ol 찾기 (article의 마지막 ol)
