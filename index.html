@@ -991,6 +991,23 @@ document.querySelectorAll('article a[href^="http"]').forEach(a => {
   a.setAttribute('rel', 'noopener noreferrer');
 });
 
+// Google 리다이렉트 URL을 실제 목적지로 자동 변환
+// (참고자료 링크가 google.com/url?q=실제URL&sa=... 형태로 감싸여 있어 경고 페이지 거치는 문제 해결)
+document.querySelectorAll('a[href*="google.com/url"]').forEach(a => {
+  try {
+    const url = new URL(a.getAttribute('href'), window.location.href);
+    const real = url.searchParams.get('q') || url.searchParams.get('url');
+    if (real) {
+      a.setAttribute('href', real);
+      // 표시 텍스트가 google URL 그대로면 실제 URL로 교체
+      const txt = (a.textContent || '').trim();
+      if (txt.startsWith('http') && txt.includes('google.com/url')) {
+        a.textContent = real;
+      }
+    }
+  } catch (e) { /* 잘못된 URL은 그대로 둠 */ }
+});
+
 // 본문 표를 .table-wrap으로 자동 감싸기 (가로 스크롤 + 스타일 적용)
 document.querySelectorAll('article table').forEach(table => {
   if (table.parentElement && table.parentElement.classList.contains('table-wrap')) return;
