@@ -37,12 +37,12 @@
   --line: #b8a988;
   --line-soft: #d6c9a8;
 
-  /* 활자 — 학술 산세리프 체계 */
-  --font-display: 'Pretendard Variable', Pretendard, 'Inter', 'Noto Serif SC', sans-serif;
-  --font-body: 'Pretendard Variable', Pretendard, 'Inter', 'Noto Serif SC', sans-serif;
-  --font-han: 'Noto Serif SC', 'Pretendard Variable', Pretendard, sans-serif;
-  --font-ui: 'Pretendard Variable', Pretendard, 'Inter', sans-serif;
-  --font-old: 'Pretendard Variable', Pretendard, sans-serif;
+  /* 활자 — 학술 산세리프 체계 (Pretendard 우선, 시스템 폰트 강화 fallback) */
+  --font-display: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', 'Helvetica Neue', 'Inter', 'Noto Serif SC', sans-serif;
+  --font-body: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', 'Helvetica Neue', 'Inter', 'Noto Serif SC', sans-serif;
+  --font-han: 'Noto Serif SC', 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-ui: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', 'Inter', sans-serif;
+  --font-old: 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
 
   /* 치수 */
   --measure: 68ch;
@@ -196,25 +196,18 @@ body::before {
   width: clamp(220px, 26vw, 280px);
   flex-shrink: 0;
   margin: 0;
-  padding-bottom: 2.2rem; /* 캡션 자리 확보 */
 }
 .portrait-frame::before {
   content: "";
   position: absolute;
-  top: -14px;
-  left: -14px;
-  right: -14px;
-  bottom: calc(2.2rem - 14px);
+  inset: -14px;
   border: 1px solid var(--line);
   border-radius: 4px;
 }
 .portrait-frame::after {
   content: "";
   position: absolute;
-  top: -7px;
-  left: -7px;
-  right: -7px;
-  bottom: calc(2.2rem - 7px);
+  inset: -7px;
   border: 0.5px solid var(--gold-soft);
   border-radius: 2px;
 }
@@ -229,19 +222,6 @@ body::before {
   z-index: 1;
   aspect-ratio: 1 / 1;
   object-fit: cover;
-}
-.portrait-caption {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-family: var(--font-display);
-  font-size: 0.88rem;
-  letter-spacing: 0.18em;
-  color: var(--celadon);
-  font-weight: 600;
-  padding-top: 0.6rem;
 }
 
 /* ───── 본문 레이아웃 ───── */
@@ -948,7 +928,6 @@ body.toc-open .toc-backdrop {
     </div>
     <figure class="portrait-frame">
       <img src="seo-jeonghwa-portrait.png" alt="서정화 박사 초상" loading="lazy">
-      <figcaption class="portrait-caption">Seo Jeong-hwa</figcaption>
     </figure>
   </div>
 </header>
