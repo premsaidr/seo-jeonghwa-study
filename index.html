@@ -405,20 +405,81 @@ article li {
 sup.ref {
   display: inline-block;
   font-family: var(--font-ui);
-  font-size: 0.78em;
+  font-size: 0.65em;
   line-height: 1;
   position: relative;
-  top: -0.5em;
-  margin: 0 0.1em 0 0.2em;
-  padding: 0.22em 0.5em;
+  top: -0.6em;
+  margin: 0 0.08em 0 0.18em;
+  padding: 0.15em 0.4em;
   background: var(--vermillion);
   color: var(--paper);
-  border-radius: 4px;
+  border-radius: 3px;
   font-weight: 700;
   letter-spacing: 0;
   vertical-align: baseline;
-  min-width: 1.4em;
+  min-width: 1.2em;
   text-align: center;
+  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+/* 클릭 가능 상태 — 호버·포커스 시 강조 */
+sup.ref.ref-anchor:hover,
+sup.ref.ref-anchor:focus {
+  background: var(--vermillion-deep);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px -2px rgba(142, 42, 42, 0.5);
+  outline: none;
+}
+sup.ref.ref-anchor:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* 점프 시 강조 깜빡임 (참고자료 항목 또는 본문 주석) */
+@keyframes refFlash {
+  0%   { background-color: rgba(142, 42, 42, 0.25); box-shadow: 0 0 0 4px rgba(142, 42, 42, 0.18); }
+  60%  { background-color: rgba(142, 42, 42, 0.10); box-shadow: 0 0 0 6px rgba(142, 42, 42, 0); }
+  100% { background-color: transparent; box-shadow: none; }
+}
+
+article > ol:last-of-type > li.ref-flash {
+  animation: refFlash 1.6s ease-out;
+  border-radius: 6px;
+}
+
+sup.ref.ref-flash {
+  animation: refFlashBadge 1.6s ease-out;
+}
+@keyframes refFlashBadge {
+  0%   { box-shadow: 0 0 0 6px rgba(161, 120, 57, 0.55); }
+  100% { box-shadow: 0 0 0 0 rgba(161, 120, 57, 0); }
+}
+
+/* 참고자료 항목의 본문 복귀 백링크 */
+a.ref-back {
+  display: inline-block;
+  margin-left: 0.6em;
+  padding: 0.05em 0.45em;
+  font-family: var(--font-ui);
+  font-size: 0.95em;
+  font-weight: 600;
+  color: var(--vermillion);
+  background: rgba(247, 239, 217, 0.6);
+  border: 1px solid rgba(142, 42, 42, 0.25);
+  border-radius: 4px;
+  text-decoration: none;
+  vertical-align: baseline;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  line-height: 1;
+}
+a.ref-back:hover,
+a.ref-back:focus {
+  background: var(--vermillion);
+  color: var(--paper);
+  transform: translateY(-1px);
+  outline: none;
+  border-color: var(--vermillion);
 }
 
 /* 강조 인용구 */
@@ -952,13 +1013,88 @@ document.querySelectorAll('article a[href^="http"]').forEach(a => {
 
 // 본문 표를 .table-wrap으로 자동 감싸기 (가로 스크롤 + 스타일 적용)
 document.querySelectorAll('article table').forEach(table => {
-  // 이미 감싸져 있으면 건너뜀
   if (table.parentElement && table.parentElement.classList.contains('table-wrap')) return;
   const wrap = document.createElement('div');
   wrap.className = 'table-wrap';
   table.parentNode.insertBefore(wrap, table);
   wrap.appendChild(table);
 });
+
+// 주석 번호 ↔ 참고자료 양방향 점프 시스템
+(function() {
+  // 1) 참고자료 ol 찾기 (article의 마지막 ol)
+  const refOl = document.querySelector('article > ol:last-of-type');
+  if (!refOl) return;
+
+  // 2) 각 li에 id 부여 (ref-1, ref-2, ...)
+  const refItems = refOl.querySelectorAll(':scope > li');
+  refItems.forEach((li, idx) => {
+    const n = idx + 1;
+    li.id = `ref-${n}`;
+
+    // 백링크 (↩) 추가 — 마지막에 본 본문 위치로 복귀
+    const back = document.createElement('a');
+    back.href = '#';
+    back.className = 'ref-back';
+    back.title = '본문으로 돌아가기';
+    back.setAttribute('aria-label', `주석 ${n}의 본문 위치로 돌아가기`);
+    back.textContent = '↩';
+    back.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.querySelector(`sup.ref[data-back="${n}"]`)
+                  || document.querySelector(`sup.ref-anchor[data-n="${n}"]`);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        flashHighlight(target);
+      }
+    });
+    li.appendChild(back);
+  });
+
+  // 3) 본문의 각 sup.ref를 클릭 가능한 링크로 변환
+  const sups = document.querySelectorAll('article sup.ref');
+  // 각 번호별 가장 최근 클릭된 본문 위치를 기록 (백링크가 어디로 갈지 결정)
+  const lastSeen = {};
+
+  sups.forEach((sup, i) => {
+    const n = parseInt(sup.textContent.trim(), 10);
+    if (!n || n < 1 || n > refItems.length) return;
+
+    sup.dataset.n = n;
+    sup.classList.add('ref-anchor');
+    sup.setAttribute('role', 'button');
+    sup.setAttribute('tabindex', '0');
+    sup.setAttribute('aria-label', `주석 ${n} 보기`);
+    sup.title = `주석 ${n}로 이동`;
+    sup.style.cursor = 'pointer';
+
+    const jump = (e) => {
+      e.preventDefault();
+      // 이 위치를 "마지막 본 위치"로 기록 → 백링크가 여기로 돌아옴
+      sups.forEach(s => { if (parseInt(s.dataset.n, 10) === n) s.removeAttribute('data-back'); });
+      sup.setAttribute('data-back', n);
+
+      const target = document.getElementById(`ref-${n}`);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        flashHighlight(target);
+      }
+    };
+
+    sup.addEventListener('click', jump);
+    sup.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') jump(e);
+    });
+  });
+
+  // 강조 깜빡임 효과
+  function flashHighlight(el) {
+    el.classList.remove('ref-flash');
+    void el.offsetWidth; // 강제 reflow로 애니메이션 재시작
+    el.classList.add('ref-flash');
+    setTimeout(() => el.classList.remove('ref-flash'), 1800);
+  }
+})();
 
 // 모바일 목차 토글
 (function() {
